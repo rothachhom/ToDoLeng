@@ -10,7 +10,7 @@ import UIKit
 class ToDoLengViewController: UITableViewController {
 
   //MARK: - Property
-  let itemArray = ["Learning code", "Eat", "Sleep"]
+  var itemArray = ["Learning code", "Eat", "Sleep"]
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -36,6 +36,24 @@ class ToDoLengViewController: UITableViewController {
       tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
     }
     tableView.deselectRow(at: indexPath, animated: true)
+  }
+  
+  //MARK: - Add New Items
+  @IBAction func addButtonPress(_ sender: Any) {
+    var textField = UITextField()
+    let alert = UIAlertController(title: "Add new ToDoLeng", message: "", preferredStyle: .alert)
+    let action = UIAlertAction(title: "Add", style: .default) { action in
+      if let text = textField.text, !text.isEmpty {
+        self.itemArray.append(text)
+        self.tableView.reloadData()
+      }
+    }
+    alert.addTextField { alerTextField in
+      alerTextField.placeholder = "Create new item"
+      textField = alerTextField
+    }
+    alert.addAction(action)
+    present(alert, animated: true)
   }
 }
 
