@@ -10,11 +10,12 @@ import UIKit
 class ToDoLengViewController: UITableViewController {
 
   //MARK: - Property
-  var itemArray = ["Learning code", "Eat", "Sleep"]
-  
+  var itemArray: [String] = []
+  let userDefaults = UserDefaults.standard
   override func viewDidLoad() {
     super.viewDidLoad()
     // Do any additional setup after loading the view.
+    itemArray = userDefaults.array(forKey: "ToDoLengList") as? [String] ?? []
   }
 
   //MARK: - Data Scource
@@ -45,6 +46,7 @@ class ToDoLengViewController: UITableViewController {
     let action = UIAlertAction(title: "Add", style: .default) { action in
       if let text = textField.text, !text.isEmpty {
         self.itemArray.append(text)
+        self.userDefaults.set(self.itemArray, forKey: "ToDoLengList")
         self.tableView.reloadData()
       }
     }
