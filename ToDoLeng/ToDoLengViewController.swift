@@ -10,12 +10,13 @@ import UIKit
 class ToDoLengViewController: UITableViewController {
 
   //MARK: - Property
-  var itemArray: [String] = []
-  let userDefaults = UserDefaults.standard
+  var itemArray = [Item]()
+  let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appending(path: "Item.plist")
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     // Do any additional setup after loading the view.
-    itemArray = userDefaults.array(forKey: "ToDoLengList") as? [String] ?? []
+    loadItems()
   }
 
   //MARK: - Data Scource
@@ -25,18 +26,17 @@ class ToDoLengViewController: UITableViewController {
   
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoLengItemCell", for: indexPath)
-    cell.textLabel?.text = itemArray[indexPath.row]
+    let item = itemArray[indexPath.row]
+    cell.textLabel?.text = item.title
+    cell.accessoryType = item.done ? .checkmark : .none
     return cell
   }
   
   //MARK: - Delegate
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-    if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-      tableView.cellForRow(at: indexPath)?.accessoryType = .none
-    } else {
-      tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-    }
-    tableView.deselectRow(at: indexPath, animated: true)
+    itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+    saveItems()
+    tableView.reloadData()
   }
   
   //MARK: - Add New Items
@@ -45,9 +45,10 @@ class ToDoLengViewController: UITableViewController {
     let alert = UIAlertController(title: "Add new ToDoLeng", message: "", preferredStyle: .alert)
     let action = UIAlertAction(title: "Add", style: .default) { action in
       if let text = textField.text, !text.isEmpty {
-        self.itemArray.append(text)
-        self.userDefaults.set(self.itemArray, forKey: "ToDoLengList")
-        self.tableView.reloadData()
+        let newItem = Item()
+        newItem.title = text 
+        self.itemArray.append(newItem)
+        self.saveItems()
       }
     }
     alert.addTextField { alerTextField in
@@ -56,6 +57,29 @@ class ToDoLengViewController: UITableViewController {
     }
     alert.addAction(action)
     present(alert, animated: true)
+  }
+  
+  //MARK: Actions
+  private func saveItems() {
+    do {
+      let encoder = PropertyListEncoder()
+      let data = try encoder.encode(itemArray)
+      try data.write(to: dataFilePath!)
+    } catch {
+      print("Unable to Decode Notes (\(error))")
+    }
+    self.tableView.reloadData()
+  }
+  
+  private func loadItems() {
+    if let data = try? Data(contentsOf: dataFilePath!) {
+      do {
+        let decoder = PropertyListDecoder()
+        itemArray = try decoder.decode([Item].self, from: data)
+      } catch {
+        print("Unable to Decode Notes (\(error))")
+      }
+    }
   }
 }
 
