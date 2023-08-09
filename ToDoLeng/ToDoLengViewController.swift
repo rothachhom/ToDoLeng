@@ -6,16 +6,17 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoLengViewController: UITableViewController {
 
   //MARK: - Property
   var itemArray = [Item]()
-  let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appending(path: "Item.plist")
+  let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    // Do any additional setup after loading the view.
+    
     loadItems()
   }
 
@@ -34,9 +35,10 @@ class ToDoLengViewController: UITableViewController {
   
   //MARK: - Delegate
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//    context.delete(itemArray[indexPath.row])
+//    itemArray.remove(at: indexPath.row)
     itemArray[indexPath.row].done = !itemArray[indexPath.row].done
     saveItems()
-    tableView.reloadData()
   }
   
   //MARK: - Add New Items
@@ -45,8 +47,9 @@ class ToDoLengViewController: UITableViewController {
     let alert = UIAlertController(title: "Add new ToDoLeng", message: "", preferredStyle: .alert)
     let action = UIAlertAction(title: "Add", style: .default) { action in
       if let text = textField.text, !text.isEmpty {
-        let newItem = Item()
-        newItem.title = text 
+        let newItem = Item(context: self.context)
+        newItem.title = text
+        newItem.done = false
         self.itemArray.append(newItem)
         self.saveItems()
       }
@@ -62,23 +65,46 @@ class ToDoLengViewController: UITableViewController {
   //MARK: Actions
   private func saveItems() {
     do {
-      let encoder = PropertyListEncoder()
-      let data = try encoder.encode(itemArray)
-      try data.write(to: dataFilePath!)
+      try context.save()
     } catch {
-      print("Unable to Decode Notes (\(error))")
+      print("Error Saving Context \(error)")
     }
     self.tableView.reloadData()
   }
   
-  private func loadItems() {
-    if let data = try? Data(contentsOf: dataFilePath!) {
-      do {
-        let decoder = PropertyListDecoder()
-        itemArray = try decoder.decode([Item].self, from: data)
-      } catch {
-        print("Unable to Decode Notes (\(error))")
-      }
+  private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    do {
+      itemArray = try context.fetch(request)
+    } catch {
+      print("Error Fetching Context \(error)")
+    }
+    self.tableView.reloadData()
+  }
+  
+  private func search(with searchText: String = "") {
+    let request: NSFetchRequest<Item> = Item.fetchRequest()
+    if !searchText.isEmpty {
+      let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchText)
+      let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
+      request.predicate = predicate
+      request.sortDescriptors = [sortDescriptor]
+      loadItems(with: request)
+    } else {
+      loadItems()
+    }
+  }
+}
+
+//MARK : Search bar delegate
+extension ToDoLengViewController: UISearchBarDelegate {
+  func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+    if let searchText = searchBar.text {
+      search(with: searchText)
+    }
+  }
+  func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    if let searchText = searchBar.text {
+      search(with: searchText)
     }
   }
 }
