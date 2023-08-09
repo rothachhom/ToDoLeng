@@ -12,12 +12,15 @@ class ToDoLengViewController: UITableViewController {
 
   //MARK: - Property
   var itemArray = [Item]()
+  var selectedCategory: Category? {
+    didSet {
+      loadItems()
+    }
+  }
   let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    
-    loadItems()
   }
 
   //MARK: - Data Scource
@@ -25,7 +28,7 @@ class ToDoLengViewController: UITableViewController {
     return itemArray.count
   }
   
-  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+  override func tableView(_ tableView:   UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoLengItemCell", for: indexPath)
     let item = itemArray[indexPath.row]
     cell.textLabel?.text = item.title
@@ -50,6 +53,7 @@ class ToDoLengViewController: UITableViewController {
         let newItem = Item(context: self.context)
         newItem.title = text
         newItem.done = false
+        newItem.parentCategory = self.selectedCategory
         self.itemArray.append(newItem)
         self.saveItems()
       }
@@ -73,6 +77,8 @@ class ToDoLengViewController: UITableViewController {
   }
   
   private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    let predicate =  NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+    request.predicate = predicate
     do {
       itemArray = try context.fetch(request)
     } catch {
